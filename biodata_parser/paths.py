@@ -25,8 +25,17 @@ def get_project_root() -> Path:
     return Path(__file__).resolve().parent.parent
 
 
+def get_runtime_base_dir() -> Path:
+    if getattr(sys, "frozen", False):
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            return Path(meipass)
+        return Path(sys.executable).resolve().parent
+    return get_project_root()
+
+
 def get_default_config_path() -> Path:
-    return get_project_root() / "config" / "default_fields.yaml"
+    return get_runtime_base_dir() / "config" / "default_fields.yaml"
 
 
 def get_app_data_dir() -> Path:
