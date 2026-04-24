@@ -69,6 +69,7 @@ source .venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
+pip install pytest
 ```
 
 ### 3. Run the app
@@ -76,6 +77,30 @@ pip install -r requirements.txt
 ```bash
 python app.py
 ```
+
+## macOS Developer Workflow
+
+macOS is supported as a development environment even though Windows remains the only end-user release target for now.
+
+Use the helper launcher to keep local runtime data inside the repo and avoid polluting your system application-support folders while developing:
+
+```bash
+python scripts/run_dev.py
+```
+
+That launcher stores local runtime data under:
+
+```text
+./app_data_dev_runtime/
+```
+
+You can also run the lightweight Qt smoke test on macOS:
+
+```bash
+python scripts/smoke_test_qt.py
+```
+
+This is useful for quickly validating that the PySide6 app can start on your machine before doing deeper testing.
 
 ## OCR Notes
 
@@ -123,6 +148,16 @@ BiodataParser/
 ```
 
 This keeps data outside the install directory so reinstalls and updates preserve records.
+
+## Data Storage During macOS Development
+
+For local development on macOS, the helper scripts use:
+
+```text
+./app_data_dev_runtime/
+```
+
+This keeps test data isolated from packaged-app behavior and makes it easy to wipe and retry during development.
 
 ## Privacy
 
