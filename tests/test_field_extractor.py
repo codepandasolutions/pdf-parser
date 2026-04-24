@@ -64,3 +64,41 @@ def test_extract_fields_multiline_stops_at_next_label() -> None:
 
     assert result["values"]["address"] == "Line 1 Line 2"
     assert result["values"]["education"] == "B.Tech"
+
+
+def test_extract_fields_can_use_heading_for_full_name() -> None:
+    config = [
+        {
+            "key": "full_name",
+            "labels": ["name"],
+            "type": "string",
+            "required": True,
+            "confidence": {"label_match": 0.9, "regex_match": 0.7},
+        },
+        {
+            "key": "date_of_birth",
+            "labels": ["date of birth"],
+            "type": "date",
+            "regex_patterns": [r"\b\d{1,2}/\d{1,2}/\d{4}\b"],
+            "confidence": {"regex_match": 0.7},
+        },
+    ]
+
+    result = extract_fields("Dhwani Shah\n\nAge: 27\nDate of Birth: 19/01/1996", config)
+
+    assert result["values"]["full_name"] == "Dhwani Shah"
+
+
+def test_extract_fields_phone_uses_first_number_for_contact_field() -> None:
+    config = [
+        {
+            "key": "contact_number",
+            "labels": ["phone number"],
+            "type": "phone",
+            "confidence": {"label_match": 0.9},
+        }
+    ]
+
+    result = extract_fields("Phone Number: 9409309740 (Father) / 9426029740 (Mother)", config)
+
+    assert result["values"]["contact_number"] == "9409309740"

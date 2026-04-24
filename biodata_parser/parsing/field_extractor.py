@@ -5,7 +5,11 @@ import re
 from biodata_parser.parsing.field_config import build_known_labels
 from biodata_parser.parsing.confidence import calculate_overall_confidence
 from biodata_parser.parsing.text_normalizer import normalize_text, split_lines
-from biodata_parser.parsing.validators import clean_value_for_type
+from biodata_parser.parsing.validators import (
+    clean_value_for_type,
+    extract_phone_candidates,
+    normalize_date_string,
+)
 
 
 SEPARATORS = r"[:=\-|–—]"
@@ -34,6 +38,19 @@ def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
         key = field["key"]
         match = _extract_field_from_lines(lines, field, known_labels)
         if match is None:
+            heuristic_match = _extract_field_from_heuristics(lines, raw_text, field, known_labels)
+            if heuristic_match is not None:
+                value = clean_value_for_type(heuristic_match, field.get("type", "string"))
+                if value:
+                    values[key] = value
+                    confidence[key] = field.get("confidence", {}).get("regex_match", 0.7)
+                    evidence[key] = {
+                        "matched_label": None,
+                        "source_line": heuristic_match,
+                        "method": "heuristic",
+                    }
+                    continue
+
             regex_match = _extract_field_from_regex(normalized_text, field)
             if regex_match is not None:
                 value = clean_value_for_type(regex_match, field.get("type", "string"))
@@ -79,7 +96,8 @@ def _extract_field_from_lines(lines: list[str], field: dict, known_labels: set[s
         for label, pattern in zip(labels, pattern_cache, strict=False):
             direct_match = pattern.match(line)
             if direct_match:
-                return direct_match.group(1), label, line
+                value = _postprocess_line_value(direct_match.group(1), field)
+                return value, label, line
             if normalized_line == label:
                 next_value = _collect_following_lines(lines, index, field, known_labels)
                 return next_value, label, line
@@ -123,8 +141,97 @@ def _line_looks_like_label(normalized_line: str, known_labels: set[str]) -> bool
 
 
 def _extract_field_from_regex(text: str, field: dict) -> str | None:
+    if field.get("key") == "age":
+        return None
     for regex_pattern in field.get("regex_patterns", []):
         match = re.search(regex_pattern, text, flags=re.IGNORECASE)
         if match:
             return match.group(0)
     return None
+
+
+def _extract_field_from_heuristics(lines: list[str], raw_text: str, field: dict, known_labels: set[str]) -> str | None:
+    key = field.get("key")
+    if key == "full_name":
+        return _extract_heading_name(lines, known_labels)
+    if key == "date_of_birth":
+        return _extract_date_candidate(raw_text)
+    return None
+
+
+def _extract_heading_name(lines: list[str], known_labels: set[str]) -> str | None:
+    ignored_headings = {
+        "bio data",
+        "biodata",
+        "personal details",
+        "about me",
+        "family background",
+        "family details",
+        "expectations",
+        "contact details",
+        "education",
+        "occupation",
+    }
+    for line in lines[:8]:
+        candidate = line.strip()
+        normalized = _normalize_label(candidate)
+        if not candidate or normalized in ignored_headings or _line_looks_like_label(normalized, known_labels):
+            continue
+        if any(char.isdigit() for char in candidate):
+            continue
+        words = [word for word in re.split(r"\s+", candidate) if word]
+        if not (2 <= len(words) <= 5):
+            continue
+        if any(len(word) <= 1 for word in words):
+            continue
+        if all(re.fullmatch(r"[A-Za-z.'’-]+", word) for word in words):
+            return candidate.title() if candidate.isupper() else candidate
+    return None
+
+
+def _extract_date_candidate(raw_text: str) -> str | None:
+    candidates = re.findall(
+        r"\b\d{1,4}[./-]\d{1,2}[./-]\d{1,4}\b|\b\d{1,2}(?:st|nd|rd|th)?[A-Za-z]+\s*,?\s*\d{2,4}\b|\b\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December),?\s+\d{2,4}\b",
+        raw_text,
+        flags=re.IGNORECASE,
+    )
+    for candidate in candidates:
+        normalized = normalize_date_string(candidate)
+        if normalized:
+            return candidate
+    return None
+
+
+def _postprocess_line_value(value: str, field: dict) -> str:
+    key = field.get("key")
+    field_type = field.get("type", "string")
+
+    if key == "alternate_contact_number":
+        candidates = extract_phone_candidates(value)
+        return candidates[1] if len(candidates) > 1 else (candidates[0] if candidates else value)
+
+    if field_type == "phone":
+        candidates = extract_phone_candidates(value)
+        return candidates[0] if candidates else value
+
+    if key == "age":
+        match = re.search(r"\b(\d{1,2})\b", value)
+        return match.group(1) if match else ""
+
+    if key == "height":
+        match = re.search(
+            r"\b\d\s*(?:ft|feet|'|’)?\s*\d{0,2}\s*(?:in|inch|inches|\"|”)?\b|\b\d{2,3}\s*cm\b",
+            value,
+            flags=re.IGNORECASE,
+        )
+        return match.group(0).strip() if match else value
+
+    if key == "weight":
+        match = re.search(r"\b\d{2,3}\s*(?:kg|kgs)\b", value, flags=re.IGNORECASE)
+        return match.group(0).strip() if match else value
+
+    if key == "date_of_birth":
+        candidate = _extract_date_candidate(value)
+        return candidate or value
+
+    return value
