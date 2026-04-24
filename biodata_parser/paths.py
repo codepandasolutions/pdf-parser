@@ -30,13 +30,16 @@ def get_default_config_path() -> Path:
 
 
 def get_app_data_dir() -> Path:
+    override = os.environ.get("BIODATA_PARSER_APP_DATA_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
     if sys.platform.startswith("win"):
         appdata = os.environ.get("APPDATA")
         if appdata:
             return Path(appdata) / APP_NAME
         return Path.home() / "AppData" / "Roaming" / APP_NAME
     if sys.platform == "darwin":
-        return Path.home() / "Library" / "Application Support" / APP_NAME
+        return get_project_root() / "app_data_dev" / APP_NAME
     return Path.home() / ".local" / "share" / APP_NAME
 
 

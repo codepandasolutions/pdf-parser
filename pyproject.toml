@@ -33,3 +33,6 @@ packages = [
   "biodata_parser.ui",
   "biodata_parser.utils",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

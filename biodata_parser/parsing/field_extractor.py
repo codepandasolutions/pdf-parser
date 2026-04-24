@@ -14,6 +14,12 @@ def _normalize_label(label: str) -> str:
     return re.sub(r"[\s.]+", " ", label.strip().lower()).strip()
 
 
+def _build_label_pattern(label: str) -> str:
+    parts = _normalize_label(label).split()
+    escaped_parts = [re.escape(part) for part in parts]
+    return r"[\s.]*".join(escaped_parts)
+
+
 def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
     normalized_text = normalize_text(raw_text)
     lines = split_lines(normalized_text)
@@ -63,14 +69,13 @@ def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
 def _extract_field_from_lines(lines: list[str], field: dict) -> tuple[str, str, str] | None:
     labels = [_normalize_label(label) for label in field.get("labels", [])]
     pattern_cache = [
-        re.compile(rf"^\s*{re.escape(label).replace('\\ ', r'\\s+')}\s*{SEPARATORS}\s*(.+?)\s*$", re.IGNORECASE)
-        for label in labels
+        re.compile(rf"^\s*{_build_label_pattern(label)}\s*{SEPARATORS}\s*(.+?)\s*$", re.IGNORECASE) for label in labels
     ]
 
     for index, line in enumerate(lines):
         normalized_line = _normalize_label(line)
         for label, pattern in zip(labels, pattern_cache, strict=False):
-            direct_match = pattern.match(normalized_line)
+            direct_match = pattern.match(line)
             if direct_match:
                 return direct_match.group(1), label, line
             if normalized_line == label:
