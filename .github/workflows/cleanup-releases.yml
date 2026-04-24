@@ -1,0 +1,54 @@
+name: Cleanup Releases
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old releases and tags
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keepCount = 2;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner,
+              repo,
+              per_page: 100,
+            });
+
+            const publishedReleases = releases
+              .filter((release) => !release.draft && !release.prerelease)
+              .sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
+
+            if (publishedReleases.length <= keepCount) {
+              core.info(`Found ${publishedReleases.length} published release(s); nothing to delete.`);
+              return;
+            }
+
+            const releasesToDelete = publishedReleases.slice(keepCount);
+
+            for (const release of releasesToDelete) {
+              core.info(`Deleting release ${release.tag_name} (id=${release.id})`);
+              await github.rest.repos.deleteRelease({
+                owner,
+                repo,
+                release_id: release.id,
+              });
+
+              core.info(`Deleting tag ${release.tag_name}`);
+              await github.rest.git.deleteRef({
+                owner,
+                repo,
+                ref: `tags/${release.tag_name}`,
+              });
+            }
