@@ -129,7 +129,7 @@ class MainWindow(QMainWindow):
         except Exception as exc:
             self._show_error("Import folder failed", str(exc))
             return
-        self.statusBar().showMessage(f"Imported {len(results)} PDF(s)", 5000)
+        self.statusBar().showMessage(f"Imported {len(results)} PDF(s) from folder", 5000)
         self.reload_records()
 
     def export_csv(self) -> None:
@@ -189,18 +189,15 @@ class MainWindow(QMainWindow):
                     self._show_error("Re-parse failed", str(exc))
                     return
             else:
-                manual_edits = dialog.get_manual_edits()
-                self.repository.update_profile(
-                    profile["id"],
-                    parsed=manual_edits,
-                    confidence=profile["confidence_json"],
-                    evidence=profile["evidence_json"],
-                    review_status=profile.get("review_status", REVIEW_STATUS_REVIEWED),
-                    manual_edits=manual_edits,
-                    raw_text=profile["raw_text"],
-                    overall_confidence=profile["overall_confidence"],
-                )
-                self.repository.create_log(profile["id"], "manual_edit", "Saved manual edits")
+                try:
+                    self.import_service.save_manual_edits(
+                        profile["id"],
+                        dialog.get_manual_edits(),
+                        mark_reviewed=dialog.should_mark_reviewed(),
+                    )
+                except Exception as exc:
+                    self._show_error("Save failed", str(exc))
+                    return
             self.reload_records()
 
     def delete_selected_record(self) -> None:

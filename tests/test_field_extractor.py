@@ -23,3 +23,44 @@ def test_extract_fields_uses_labels_and_regex() -> None:
     assert result["values"]["full_name"] == "Rahul Sharma"
     assert result["values"]["contact_number"] == "9876543210"
     assert result["overall_confidence"] > 0
+
+
+def test_extract_fields_supports_next_line_value() -> None:
+    config = [
+        {
+            "key": "full_name",
+            "labels": ["name"],
+            "type": "string",
+            "required": True,
+            "confidence": {"label_match": 0.9},
+        }
+    ]
+
+    result = extract_fields("Name\nRahul Sharma\nEducation\nB.Tech", config)
+
+    assert result["values"]["full_name"] == "Rahul Sharma"
+
+
+def test_extract_fields_multiline_stops_at_next_label() -> None:
+    config = [
+        {
+            "key": "address",
+            "labels": ["address"],
+            "type": "string",
+            "multiline": True,
+            "max_lines": 4,
+            "stop_at_next_label": True,
+            "confidence": {"label_match": 0.9},
+        },
+        {
+            "key": "education",
+            "labels": ["education"],
+            "type": "string",
+            "confidence": {"label_match": 0.9},
+        },
+    ]
+
+    result = extract_fields("Address\nLine 1\nLine 2\nEducation: B.Tech", config)
+
+    assert result["values"]["address"] == "Line 1 Line 2"
+    assert result["values"]["education"] == "B.Tech"

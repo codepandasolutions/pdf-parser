@@ -21,6 +21,7 @@ class RecordDialog(QDialog):
         self.field_config = field_config
         self.inputs: dict[str, QWidget] = {}
         self._reparse_requested = False
+        self._mark_reviewed_requested = False
 
         self.setWindowTitle(f"Record: {profile['source_file_name']}")
         self.resize(900, 700)
@@ -82,10 +83,13 @@ class RecordDialog(QDialog):
     def is_reparse_requested(self) -> bool:
         return self._reparse_requested
 
+    def should_mark_reviewed(self) -> bool:
+        return self._mark_reviewed_requested
+
     def _request_reparse(self) -> None:
         self._reparse_requested = True
         self.accept()
 
     def _save_as_reviewed(self) -> None:
-        self.profile["review_status"] = "Reviewed"
+        self._mark_reviewed_requested = True
         self.accept()

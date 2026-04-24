@@ -9,6 +9,7 @@ from biodata_parser.constants import (
     REVIEW_STATUS_FAILED,
     REVIEW_STATUS_NEEDS_REVIEW,
     REVIEW_STATUS_PARSED,
+    REVIEW_STATUS_REVIEWED,
 )
 from biodata_parser.db.repository import ProfileRecord, ProfileRepository
 from biodata_parser.parsing.field_config import load_field_config
@@ -63,6 +64,31 @@ class ImportService:
                 self.repository.create_log(None, "import_error", f"{pdf_path.name}: {exc}")
         return results
 
+    def save_manual_edits(self, profile_id: int, values: dict[str, str], mark_reviewed: bool = False) -> dict:
+        profile = self.repository.get_profile(profile_id)
+        if profile is None:
+            raise ValueError(f"Profile {profile_id} was not found")
+
+        field_config = load_field_config(self.app_paths.field_config_path)
+        allowed_keys = {field["key"] for field in field_config}
+        sanitized_values = {key: value.strip() for key, value in values.items() if key in allowed_keys}
+        merged_values = dict(profile["parsed_json"])
+        merged_values.update(sanitized_values)
+
+        review_status = REVIEW_STATUS_REVIEWED if mark_reviewed else profile["review_status"]
+        self.repository.update_profile(
+            profile_id,
+            parsed=merged_values,
+            confidence=profile["confidence_json"],
+            evidence=profile["evidence_json"],
+            review_status=review_status,
+            manual_edits=sanitized_values,
+            raw_text=profile["raw_text"],
+            overall_confidence=profile["overall_confidence"],
+        )
+        self.repository.create_log(profile_id, "manual_edit", "Saved manual edits")
+        return self.repository.get_profile(profile_id) or {}
+
     def reparse_profile(self, profile_id: int, overwrite_manual_edits: bool) -> dict:
         profile = self.repository.get_profile(profile_id)
         if profile is None:
@@ -77,6 +103,8 @@ class ImportService:
             parsed = {**parsed, **profile["manual_edits_json"]}
 
         review_status = self._determine_review_status(extraction["method"], extraction_result)
+        if not overwrite_manual_edits and profile["review_status"] == REVIEW_STATUS_REVIEWED:
+            review_status = REVIEW_STATUS_REVIEWED
         self.repository.update_profile(
             profile_id,
             parsed=parsed,

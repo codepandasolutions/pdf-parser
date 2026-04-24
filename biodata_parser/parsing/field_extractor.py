@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 
+from biodata_parser.parsing.field_config import build_known_labels
 from biodata_parser.parsing.confidence import calculate_overall_confidence
 from biodata_parser.parsing.text_normalizer import normalize_text, split_lines
 from biodata_parser.parsing.validators import clean_value_for_type
@@ -23,6 +24,7 @@ def _build_label_pattern(label: str) -> str:
 def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
     normalized_text = normalize_text(raw_text)
     lines = split_lines(normalized_text)
+    known_labels = {_normalize_label(label) for label in build_known_labels(field_config)}
     values: dict[str, str] = {}
     confidence: dict[str, float] = {}
     evidence: dict[str, dict] = {}
@@ -30,7 +32,7 @@ def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
 
     for field in field_config:
         key = field["key"]
-        match = _extract_field_from_lines(lines, field)
+        match = _extract_field_from_lines(lines, field, known_labels)
         if match is None:
             regex_match = _extract_field_from_regex(normalized_text, field)
             if regex_match is not None:
@@ -66,7 +68,7 @@ def extract_fields(raw_text: str, field_config: list[dict]) -> dict:
     }
 
 
-def _extract_field_from_lines(lines: list[str], field: dict) -> tuple[str, str, str] | None:
+def _extract_field_from_lines(lines: list[str], field: dict, known_labels: set[str]) -> tuple[str, str, str] | None:
     labels = [_normalize_label(label) for label in field.get("labels", [])]
     pattern_cache = [
         re.compile(rf"^\s*{_build_label_pattern(label)}\s*{SEPARATORS}\s*(.+?)\s*$", re.IGNORECASE) for label in labels
@@ -79,12 +81,12 @@ def _extract_field_from_lines(lines: list[str], field: dict) -> tuple[str, str, 
             if direct_match:
                 return direct_match.group(1), label, line
             if normalized_line == label:
-                next_value = _collect_following_lines(lines, index, field)
+                next_value = _collect_following_lines(lines, index, field, known_labels)
                 return next_value, label, line
     return None
 
 
-def _collect_following_lines(lines: list[str], start_index: int, field: dict) -> str:
+def _collect_following_lines(lines: list[str], start_index: int, field: dict, known_labels: set[str]) -> str:
     if start_index + 1 >= len(lines):
         return ""
 
@@ -92,12 +94,32 @@ def _collect_following_lines(lines: list[str], start_index: int, field: dict) ->
         max_lines = int(field.get("max_lines", 3))
         values: list[str] = []
         for candidate in lines[start_index + 1 : start_index + 1 + max_lines]:
+            normalized_candidate = _normalize_label(candidate)
             if not candidate.strip():
+                break
+            if field.get("stop_at_next_label", True) and _line_looks_like_label(normalized_candidate, known_labels):
                 break
             values.append(candidate.strip())
         return " ".join(values).strip()
 
-    return lines[start_index + 1].strip()
+    next_line = lines[start_index + 1].strip()
+    if _line_looks_like_label(_normalize_label(next_line), known_labels):
+        return ""
+    return next_line
+
+
+def _line_looks_like_label(normalized_line: str, known_labels: set[str]) -> bool:
+    if normalized_line in known_labels:
+        return True
+
+    for known_label in known_labels:
+        if normalized_line.startswith(f"{known_label}:"):
+            return True
+        if normalized_line.startswith(f"{known_label} -"):
+            return True
+        if normalized_line.startswith(f"{known_label} ="):
+            return True
+    return False
 
 
 def _extract_field_from_regex(text: str, field: dict) -> str | None:
