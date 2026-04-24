@@ -12,3 +12,11 @@ def load_field_config(config_path: Path | None = None) -> list[dict]:
     with path.open("r", encoding="utf-8") as handle:
         payload = yaml.safe_load(handle) or {}
     return payload.get("fields", [])
+
+
+def build_known_labels(field_config: list[dict]) -> set[str]:
+    labels: set[str] = set()
+    for field in field_config:
+        for label in field.get("labels", []):
+            labels.add(label)
+    return labels

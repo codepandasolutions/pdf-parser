@@ -67,15 +67,32 @@ def _extract_field_from_lines(lines: list[str], field: dict) -> tuple[str, str, 
         for label in labels
     ]
 
-    for line in lines:
+    for index, line in enumerate(lines):
         normalized_line = _normalize_label(line)
         for label, pattern in zip(labels, pattern_cache, strict=False):
             direct_match = pattern.match(normalized_line)
             if direct_match:
                 return direct_match.group(1), label, line
             if normalized_line == label:
-                return "", label, line
+                next_value = _collect_following_lines(lines, index, field)
+                return next_value, label, line
     return None
+
+
+def _collect_following_lines(lines: list[str], start_index: int, field: dict) -> str:
+    if start_index + 1 >= len(lines):
+        return ""
+
+    if field.get("multiline"):
+        max_lines = int(field.get("max_lines", 3))
+        values: list[str] = []
+        for candidate in lines[start_index + 1 : start_index + 1 + max_lines]:
+            if not candidate.strip():
+                break
+            values.append(candidate.strip())
+        return " ".join(values).strip()
+
+    return lines[start_index + 1].strip()
 
 
 def _extract_field_from_regex(text: str, field: dict) -> str | None:
