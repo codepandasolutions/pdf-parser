@@ -1,0 +1,77 @@
+fields:
+  - key: full_name
+    display_name: Full Name
+    csv_column: Full Name
+    type: string
+    required: true
+    labels:
+      - name
+      - full name
+      - candidate name
+      - bride name
+      - groom name
+    regex_patterns: []
+    cleanup:
+      trim: true
+      collapse_spaces: true
+    confidence:
+      label_match: 0.9
+      regex_match: 0.8
+
+  - key: date_of_birth
+    display_name: Date of Birth
+    csv_column: DOB
+    type: date
+    required: false
+    labels:
+      - dob
+      - d.o.b
+      - d.o.b.
+      - date of birth
+      - birth date
+      - born on
+    regex_patterns:
+      - "\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b"
+    cleanup:
+      trim: true
+      normalize_date: true
+
+  - key: contact_number
+    display_name: Contact Number
+    csv_column: Contact Number
+    type: phone
+    required: false
+    labels:
+      - contact
+      - mobile
+      - mobile number
+      - phone
+      - phone number
+      - whatsapp
+    regex_patterns:
+      - "(?:\\+91[-\\s]?)?[6-9]\\d{9}"
+    cleanup:
+      normalize_phone_india: true
+
+  - key: education
+    display_name: Education
+    csv_column: Education
+    type: string
+    required: false
+    labels:
+      - education
+      - qualification
+      - academic qualification
+    regex_patterns: []
+
+  - key: occupation
+    display_name: Occupation
+    csv_column: Occupation
+    type: string
+    required: false
+    labels:
+      - occupation
+      - profession
+      - job
+      - work
+    regex_patterns: []
