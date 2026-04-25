@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QAbstractTableModel, QModelIndex, Qt
+from PySide6.QtGui import QColor
 
 
 class RecordsTableModel(QAbstractTableModel):
@@ -25,12 +26,28 @@ class RecordsTableModel(QAbstractTableModel):
         return None
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> str | None:
-        if not index.isValid() or role != Qt.DisplayRole:
+        if not index.isValid():
             return None
         row = self.rows[index.row()]
         key = self.columns[index.column()][0]
         value = row.get(key, "")
-        return "" if value is None else str(value)
+        if role == Qt.DisplayRole:
+            if key == "overall_confidence" and value not in ("", None):
+                return f"{float(value):.2f}"
+            return "" if value is None else str(value)
+        if role == Qt.TextAlignmentRole:
+            if key == "overall_confidence":
+                return int(Qt.AlignCenter)
+            return int(Qt.AlignVCenter | Qt.AlignLeft)
+        if role == Qt.ForegroundRole and key == "review_status":
+            status_colors = {
+                "Parsed": QColor("#245b52"),
+                "Needs Review": QColor("#8b5a16"),
+                "Reviewed": QColor("#1f5ea8"),
+                "Failed": QColor("#8c2f39"),
+            }
+            return status_colors.get(str(value))
+        return None
 
     def set_rows(self, rows: list[dict]) -> None:
         self.beginResetModel()

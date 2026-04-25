@@ -5,18 +5,21 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
+    QAbstractItemView,
     QComboBox,
     QFileDialog,
+    QGridLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QMainWindow,
     QMessageBox,
     QPushButton,
     QStatusBar,
     QTableView,
-    QToolBar,
     QVBoxLayout,
     QWidget,
 )
@@ -39,6 +42,7 @@ from biodata_parser.services.update_service import check_for_updates
 from biodata_parser.ui.record_dialog import RecordDialog
 from biodata_parser.ui.settings_dialog import SettingsDialog
 from biodata_parser.ui.table_model import RecordsTableModel
+from biodata_parser.ui.theme import apply_app_theme
 
 
 class MainWindow(QMainWindow):
@@ -53,7 +57,8 @@ class MainWindow(QMainWindow):
         self.field_config = load_field_config(self.app_paths.field_config_path)
 
         self.setWindowTitle("Biodata Parser")
-        self.resize(1300, 800)
+        self.resize(1440, 900)
+        self.setMinimumSize(1180, 760)
 
         self.status_filter = QComboBox()
         self.status_filter.addItems(
@@ -61,6 +66,7 @@ class MainWindow(QMainWindow):
         )
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("Search name, phone, city, education, occupation...")
+        self.search_box.setClearButtonEnabled(True)
 
         self.table_model = RecordsTableModel(self._build_columns())
         self.table_view = QTableView()
@@ -68,34 +74,28 @@ class MainWindow(QMainWindow):
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
         self.table_view.setSelectionMode(QTableView.SingleSelection)
         self.table_view.setAlternatingRowColors(True)
+        self.table_view.setShowGrid(False)
+        self.table_view.setWordWrap(False)
+        self.table_view.setSortingEnabled(False)
+        self.table_view.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table_view.verticalHeader().setVisible(False)
+        self.table_view.horizontalHeader().setStretchLastSection(False)
         self.table_view.doubleClicked.connect(self.open_selected_record)
 
-        toolbar = QToolBar("Main")
-        self.addToolBar(toolbar)
-        for label, handler in (
-            ("Import PDF", self.import_pdf),
-            ("Import Folder", self.import_folder),
-            ("Export CSV", self.export_csv),
-            ("View PDF", self.view_selected_pdf),
-            ("Open/Edit Record", self.open_selected_record),
-            ("Delete Record", self.delete_selected_record),
-            ("Check for Updates", self.check_updates),
-            ("Settings", self.open_settings),
-        ):
-            action = toolbar.addAction(label)
-            action.triggered.connect(handler)
-
-        controls_layout = QHBoxLayout()
-        controls_layout.addWidget(self.status_filter)
-        controls_layout.addWidget(self.search_box)
-        refresh_button = QPushButton("Refresh")
-        refresh_button.clicked.connect(self.reload_records)
-        controls_layout.addWidget(refresh_button)
+        self.total_records_card, self.total_records_label = self._create_summary_card("Records", "0")
+        self.review_queue_card, self.review_queue_label = self._create_summary_card("Needs Review", "0")
+        self.reviewed_card, self.reviewed_label = self._create_summary_card("Reviewed", "0")
+        self.failed_card, self.failed_label = self._create_summary_card("Failed", "0")
 
         central_widget = QWidget()
+        central_widget.setObjectName("AppShell")
         central_layout = QVBoxLayout(central_widget)
-        central_layout.addLayout(controls_layout)
-        central_layout.addWidget(self.table_view)
+        central_layout.setContentsMargins(24, 24, 24, 18)
+        central_layout.setSpacing(18)
+        central_layout.addWidget(self._build_hero_card())
+        central_layout.addWidget(self._build_filters_card())
+        central_layout.addWidget(self._build_summary_row())
+        central_layout.addWidget(self._build_table_card(), stretch=1)
         self.setCentralWidget(central_widget)
         self.setStatusBar(QStatusBar())
 
@@ -188,7 +188,22 @@ class MainWindow(QMainWindow):
                 except Exception as exc:
                     self._show_error("Re-parse failed", str(exc))
                     return
-            else:
+            elif dialog.is_save_requested() or dialog.should_mark_reviewed():
+                prompt_title = "Confirm Review Save" if dialog.should_mark_reviewed() else "Confirm Save"
+                prompt_text = (
+                    "Save changes and mark this record as Reviewed?"
+                    if dialog.should_mark_reviewed()
+                    else "Save your manual changes to this record?"
+                )
+                reply = QMessageBox.question(
+                    self,
+                    prompt_title,
+                    prompt_text,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.Yes,
+                )
+                if reply != QMessageBox.StandardButton.Yes:
+                    return
                 try:
                     self.import_service.save_manual_edits(
                         profile["id"],
@@ -250,6 +265,7 @@ class MainWindow(QMainWindow):
         filtered_records = self._apply_filters(records)
         self.table_model.set_rows(filtered_records)
         self.table_view.resizeColumnsToContents()
+        self._update_summary_cards(records)
         self.statusBar().showMessage(f"{len(filtered_records)} record(s)", 3000)
 
     def _build_columns(self) -> list[tuple[str, str]]:
@@ -305,11 +321,138 @@ class MainWindow(QMainWindow):
         self.logger.error("%s: %s", title, message)
         QMessageBox.critical(self, title, message)
 
+    def _build_hero_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("HeroCard")
+        layout = QHBoxLayout(card)
+        layout.setContentsMargins(22, 20, 22, 20)
+        layout.setSpacing(20)
+
+        copy_layout = QVBoxLayout()
+        copy_layout.setSpacing(6)
+        title = QLabel("Biodata Review Workspace")
+        title.setObjectName("HeroTitle")
+        subtitle = QLabel(
+            "Import biodata PDFs, review extracted values, and prepare a clean export for final decisions."
+        )
+        subtitle.setObjectName("HeroSubtitle")
+        subtitle.setWordWrap(True)
+        chips_layout = QHBoxLayout()
+        chips_layout.setSpacing(8)
+        for text in ("Local only", "Windows release ready", "Rule-based extraction"):
+            chip = QLabel(text)
+            chip.setObjectName("ChipLabel")
+            chips_layout.addWidget(chip)
+        chips_layout.addStretch(1)
+        copy_layout.addWidget(title)
+        copy_layout.addWidget(subtitle)
+        copy_layout.addLayout(chips_layout)
+
+        actions_layout = QGridLayout()
+        actions_layout.setHorizontalSpacing(10)
+        actions_layout.setVerticalSpacing(10)
+        action_specs = [
+            ("Import PDF", self.import_pdf, "PrimaryButton"),
+            ("Import Folder", self.import_folder, ""),
+            ("Export CSV", self.export_csv, ""),
+            ("View PDF", self.view_selected_pdf, ""),
+            ("Open Record", self.open_selected_record, ""),
+            ("Delete Record", self.delete_selected_record, "DangerButton"),
+            ("Check Updates", self.check_updates, "GhostButton"),
+            ("Settings", self.open_settings, "GhostButton"),
+        ]
+        for index, (label, handler, object_name) in enumerate(action_specs):
+            button = QPushButton(label)
+            if object_name:
+                button.setObjectName(object_name)
+            button.clicked.connect(handler)
+            actions_layout.addWidget(button, index // 2, index % 2)
+
+        layout.addLayout(copy_layout, stretch=3)
+        layout.addLayout(actions_layout, stretch=2)
+        return card
+
+    def _build_filters_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("PanelCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+        title = QLabel("Browse Records")
+        title.setObjectName("SectionTitle")
+        hint = QLabel("Filter by review status and search across the extracted table.")
+        hint.setObjectName("SectionHint")
+        controls = QHBoxLayout()
+        controls.setSpacing(12)
+        self.status_filter.setMinimumWidth(210)
+        self.search_box.setMinimumWidth(360)
+        refresh_button = QPushButton("Refresh")
+        refresh_button.setObjectName("GhostButton")
+        refresh_button.clicked.connect(self.reload_records)
+        controls.addWidget(self.status_filter, stretch=0)
+        controls.addWidget(self.search_box, stretch=1)
+        controls.addWidget(refresh_button, stretch=0)
+        layout.addWidget(title)
+        layout.addWidget(hint)
+        layout.addLayout(controls)
+        return card
+
+    def _build_summary_row(self) -> QWidget:
+        row = QWidget()
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(14)
+        for card in (
+            self.total_records_card,
+            self.review_queue_card,
+            self.reviewed_card,
+            self.failed_card,
+        ):
+            layout.addWidget(card)
+        return row
+
+    def _build_table_card(self) -> QWidget:
+        card = QWidget()
+        card.setObjectName("TableCard")
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 18, 18, 18)
+        layout.setSpacing(12)
+        title = QLabel("Imported Biodata Records")
+        title.setObjectName("SectionTitle")
+        hint = QLabel("Double-click a row to review or correct the extracted fields.")
+        hint.setObjectName("SectionHint")
+        layout.addWidget(title)
+        layout.addWidget(hint)
+        layout.addWidget(self.table_view, stretch=1)
+        return card
+
+    def _create_summary_card(self, label_text: str, value_text: str) -> tuple[QWidget, QLabel]:
+        card = QWidget()
+        card.setObjectName("PanelCard")
+        card.setMinimumHeight(92)
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(4)
+        label = QLabel(label_text)
+        label.setObjectName("SummaryLabel")
+        value = QLabel(value_text)
+        value.setObjectName("SummaryValue")
+        layout.addWidget(label)
+        layout.addWidget(value)
+        return card, value
+
+    def _update_summary_cards(self, records: list[dict]) -> None:
+        self.total_records_label.setText(str(len(records)))
+        self.review_queue_label.setText(str(sum(1 for row in records if row.get("review_status") == REVIEW_STATUS_NEEDS_REVIEW)))
+        self.reviewed_label.setText(str(sum(1 for row in records if row.get("review_status") == REVIEW_STATUS_REVIEWED)))
+        self.failed_label.setText(str(sum(1 for row in records if row.get("review_status") == REVIEW_STATUS_FAILED)))
+
 
 def run_app() -> int:
     app_paths = ensure_app_paths()
     configure_logging(app_paths.log_file_path)
     app = QApplication(sys.argv)
+    apply_app_theme(app)
     window = MainWindow()
     window.show()
     return app.exec()

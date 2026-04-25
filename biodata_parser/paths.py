@@ -65,6 +65,10 @@ def ensure_app_paths() -> AppPaths:
     field_config_path = config_dir / "fields.yaml"
     if not field_config_path.exists():
         shutil.copy2(get_default_config_path(), field_config_path)
+    else:
+        from biodata_parser.parsing.field_config import sync_field_config
+
+        sync_field_config(field_config_path, get_default_config_path())
 
     return AppPaths(
         root=root,

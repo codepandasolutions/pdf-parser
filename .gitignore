@@ -30,3 +30,5 @@ tmp/
 
 app_data_dev/
 app_data_dev_runtime/
+app_data_dev_samples/
+app_data_dev_samples_v2/

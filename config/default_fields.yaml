@@ -10,6 +10,8 @@ fields:
       - candidate name
       - bride name
       - groom name
+      - applicant name
+      - profile name
     regex_patterns: []
     cleanup:
       trim: true
@@ -17,6 +19,16 @@ fields:
     confidence:
       label_match: 0.9
       regex_match: 0.8
+
+  - key: gender
+    display_name: Gender
+    csv_column: Gender
+    type: string
+    required: false
+    labels:
+      - gender
+      - sex
+    regex_patterns: []
 
   - key: date_of_birth
     display_name: Date of Birth
@@ -30,11 +42,313 @@ fields:
       - date of birth
       - birth date
       - born on
+      - janam tarikh
     regex_patterns:
-      - "\\b\\d{1,2}[/-]\\d{1,2}[/-]\\d{2,4}\\b"
+      - "\\b\\d{1,4}[./-]\\d{1,2}[./-]\\d{1,4}\\b"
+      - "\\b\\d{1,2}(?:st|nd|rd|th)?\\s+(?:Jan|January|Feb|February|Mar|March|Apr|April|May|Jun|June|Jul|July|Aug|August|Sep|Sept|September|Oct|October|Nov|November|Dec|December),?\\s+\\d{2,4}\\b"
     cleanup:
-      trim: true
       normalize_date: true
+
+  - key: age
+    display_name: Age
+    csv_column: Age
+    type: string
+    required: false
+    labels:
+      - age
+    regex_patterns:
+      - "\\b\\d{1,2}\\b"
+
+  - key: birth_time
+    display_name: Birth Time
+    csv_column: Birth Time
+    type: string
+    required: false
+    labels:
+      - birth time
+      - time of birth
+      - tob
+    regex_patterns: []
+
+  - key: birth_place
+    display_name: Birth Place
+    csv_column: Birth Place
+    type: string
+    required: false
+    labels:
+      - birth place
+      - place of birth
+      - pob
+    regex_patterns: []
+
+  - key: height
+    display_name: Height
+    csv_column: Height
+    type: string
+    required: false
+    labels:
+      - height
+    regex_patterns:
+      - "\\b\\d\\s*(?:ft|feet|'|’)?\\s*\\d{0,2}\\s*(?:in|inch|inches|\\\")?\\b"
+      - "\\b\\d{2,3}\\s*cm\\b"
+
+  - key: weight
+    display_name: Weight
+    csv_column: Weight
+    type: string
+    required: false
+    labels:
+      - weight
+    regex_patterns:
+      - "\\b\\d{2,3}\\s*(?:kg|kgs)\\b"
+
+  - key: complexion
+    display_name: Complexion
+    csv_column: Complexion
+    type: string
+    required: false
+    labels:
+      - complexion
+    regex_patterns: []
+
+  - key: religion
+    display_name: Religion
+    csv_column: Religion
+    type: string
+    required: false
+    labels:
+      - religion
+    regex_patterns: []
+
+  - key: caste
+    display_name: Caste
+    csv_column: Caste
+    type: string
+    required: false
+    labels:
+      - caste
+    regex_patterns: []
+
+  - key: sub_caste
+    display_name: Sub Caste
+    csv_column: Sub Caste
+    type: string
+    required: false
+    labels:
+      - sub caste
+      - sub-caste
+    regex_patterns: []
+
+  - key: gotra
+    display_name: Gotra
+    csv_column: Gotra
+    type: string
+    required: false
+    labels:
+      - gotra
+    regex_patterns: []
+
+  - key: manglik_status
+    display_name: Manglik Status
+    csv_column: Manglik Status
+    type: string
+    required: false
+    labels:
+      - manglik
+      - manglik status
+    regex_patterns: []
+
+  - key: mother_tongue
+    display_name: Mother Tongue
+    csv_column: Mother Tongue
+    type: string
+    required: false
+    labels:
+      - mother tongue
+      - language
+    regex_patterns: []
+
+  - key: education
+    display_name: Education
+    csv_column: Education
+    type: string
+    required: false
+    multiline: true
+    max_lines: 3
+    stop_at_next_label: true
+    labels:
+      - education
+      - qualification
+      - academic qualification
+    regex_patterns: []
+
+  - key: occupation
+    display_name: Occupation
+    csv_column: Occupation
+    type: string
+    required: false
+    multiline: true
+    max_lines: 3
+    stop_at_next_label: true
+    labels:
+      - occupation
+      - profession
+      - job
+      - work
+    regex_patterns: []
+
+  - key: employer_or_business
+    display_name: Employer / Business
+    csv_column: Employer / Business
+    type: string
+    required: false
+    labels:
+      - employer
+      - company
+      - business
+      - employer or business
+    regex_patterns: []
+
+  - key: annual_income
+    display_name: Annual Income
+    csv_column: Annual Income
+    type: string
+    required: false
+    labels:
+      - annual income
+      - income
+      - salary
+      - ctc
+    regex_patterns:
+      - "\\b\\d+(?:\\.\\d+)?\\s*(?:lpa|lakhs?|lakh|crore|crores)\\b"
+      - "₹\\s?[\\d,]+"
+
+  - key: current_city
+    display_name: Current City
+    csv_column: Current City
+    type: string
+    required: false
+    labels:
+      - current city
+      - residing in
+      - residence
+      - city
+    regex_patterns: []
+
+  - key: native_place
+    display_name: Native Place
+    csv_column: Native Place
+    type: string
+    required: false
+    labels:
+      - native place
+      - hometown
+      - native
+    regex_patterns: []
+
+  - key: marital_status
+    display_name: Marital Status
+    csv_column: Marital Status
+    type: string
+    required: false
+    labels:
+      - marital status
+    regex_patterns: []
+
+  - key: father_name
+    display_name: Father Name
+    csv_column: Father Name
+    type: string
+    required: false
+    labels:
+      - father name
+      - father's name
+    regex_patterns: []
+
+  - key: father_occupation
+    display_name: Father Occupation
+    csv_column: Father Occupation
+    type: string
+    required: false
+    labels:
+      - father occupation
+      - father's occupation
+    regex_patterns: []
+
+  - key: mother_name
+    display_name: Mother Name
+    csv_column: Mother Name
+    type: string
+    required: false
+    labels:
+      - mother name
+      - mother's name
+    regex_patterns: []
+
+  - key: mother_occupation
+    display_name: Mother Occupation
+    csv_column: Mother Occupation
+    type: string
+    required: false
+    labels:
+      - mother occupation
+      - mother's occupation
+    regex_patterns: []
+
+  - key: siblings
+    display_name: Siblings
+    csv_column: Siblings
+    type: string
+    required: false
+    multiline: true
+    max_lines: 3
+    stop_at_next_label: true
+    labels:
+      - siblings
+      - brother and sister
+      - brothers and sisters
+    regex_patterns: []
+
+  - key: family_details
+    display_name: Family Details
+    csv_column: Family Details
+    type: string
+    required: false
+    multiline: true
+    max_lines: 5
+    stop_at_next_label: true
+    labels:
+      - family details
+      - family
+      - family background
+    regex_patterns: []
+
+  - key: hobbies
+    display_name: Hobbies
+    csv_column: Hobbies
+    type: string
+    required: false
+    multiline: true
+    max_lines: 3
+    stop_at_next_label: true
+    labels:
+      - hobbies
+      - interests
+    regex_patterns: []
+
+  - key: expectations
+    display_name: Expectations
+    csv_column: Expectations
+    type: string
+    required: false
+    multiline: true
+    max_lines: 5
+    stop_at_next_label: true
+    labels:
+      - expectations
+      - partner expectations
+      - expected partner
+    regex_patterns: []
 
   - key: contact_number
     display_name: Contact Number
@@ -47,31 +361,48 @@ fields:
       - mobile number
       - phone
       - phone number
+      - contact number
       - whatsapp
+      - whatsapp number
     regex_patterns:
       - "(?:\\+91[-\\s]?)?[6-9]\\d{9}"
     cleanup:
       normalize_phone_india: true
 
-  - key: education
-    display_name: Education
-    csv_column: Education
-    type: string
+  - key: alternate_contact_number
+    display_name: Alternate Contact Number
+    csv_column: Alternate Contact Number
+    type: phone
     required: false
     labels:
-      - education
-      - qualification
-      - academic qualification
-    regex_patterns: []
+      - alternate contact
+      - alternate number
+      - other contact
+    regex_patterns:
+      - "(?:\\+91[-\\s]?)?[6-9]\\d{9}"
 
-  - key: occupation
-    display_name: Occupation
-    csv_column: Occupation
-    type: string
+  - key: email
+    display_name: Email
+    csv_column: Email
+    type: email
     required: false
     labels:
-      - occupation
-      - profession
-      - job
-      - work
+      - email
+      - email id
+      - e-mail
+    regex_patterns:
+      - "[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+
+  - key: address
+    display_name: Address
+    csv_column: Address
+    type: string
+    required: false
+    multiline: true
+    max_lines: 5
+    stop_at_next_label: true
+    labels:
+      - address
+      - residential address
+      - residence address
     regex_patterns: []
