@@ -6,116 +6,141 @@ from PySide6.QtWidgets import QApplication
 
 APP_STYLESHEET = """
 QMainWindow, QDialog {
-    background: #f4f1ea;
-    color: #1f2933;
+    background: #eef2f6;
+    color: #233240;
 }
 
 QWidget#AppShell, QWidget#DialogShell {
     background: transparent;
 }
 
-QWidget#HeroCard, QWidget#PanelCard, QWidget#TableCard, QWidget#MetaCard, QWidget#RawTextCard {
-    background: #fffdf8;
-    border: 1px solid #e5ddcf;
+QWidget#SidebarCard {
+    background: #203245;
+    border-right: 1px solid #162431;
+}
+
+QWidget#TopBarCard, QWidget#ToolbarCard, QWidget#MetricCard, QWidget#TableCard, QWidget#PanelCard, QWidget#RawTextCard {
+    background: #ffffff;
+    border: 1px solid #d8e0e8;
+    border-radius: 14px;
+}
+
+QWidget#TableCard {
     border-radius: 18px;
 }
 
-QWidget#HeroCard {
-    background: qlineargradient(x1: 0, y1: 0, x2: 1, y2: 1,
-        stop: 0 #fbf6ea, stop: 1 #efe5d2);
-    border: 1px solid #dccfb6;
-}
-
-QLabel#HeroTitle {
-    font-size: 26px;
+QLabel#SidebarTitle {
+    color: #f3f6fa;
+    font-size: 20px;
     font-weight: 700;
-    color: #402a1f;
 }
 
-QLabel#HeroSubtitle {
-    font-size: 13px;
-    color: #72584a;
+QLabel#SidebarSubtitle {
+    color: #aab9c7;
+    font-size: 12px;
 }
 
 QLabel#SectionTitle {
-    font-size: 16px;
+    color: #203245;
+    font-size: 18px;
     font-weight: 700;
-    color: #2d3b45;
 }
 
 QLabel#SectionHint {
+    color: #708191;
     font-size: 12px;
-    color: #6a7a86;
 }
 
-QLabel#SummaryLabel {
-    font-size: 12px;
-    color: #7a685d;
+QLabel#MetricLabel {
+    color: #748392;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 
-QLabel#SummaryValue {
-    font-size: 22px;
+QLabel#MetricValue {
+    color: #203245;
+    font-size: 24px;
     font-weight: 700;
-    color: #2c3a43;
 }
 
-QLabel#ChipLabel {
-    background: #f2e8d7;
-    color: #61483b;
-    border: 1px solid #e0cfb4;
-    border-radius: 12px;
-    padding: 6px 10px;
+QLabel#MetricAccent {
+    color: #1e5aa6;
     font-size: 12px;
     font-weight: 600;
 }
 
+QLabel#TableTitle {
+    color: #203245;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+QLabel#TableHint {
+    color: #7a8793;
+    font-size: 12px;
+}
+
 QPushButton {
-    background: #f8f2e7;
-    border: 1px solid #dccfb6;
-    border-radius: 12px;
+    min-height: 18px;
     padding: 10px 14px;
-    color: #433229;
+    background: #f5f8fb;
+    color: #243240;
+    border: 1px solid #d4dde6;
+    border-radius: 10px;
     font-weight: 600;
 }
 
 QPushButton:hover {
-    background: #f1e5d0;
+    background: #ebf1f6;
 }
 
 QPushButton:pressed {
-    background: #e8d8bc;
+    background: #dfe8f0;
+}
+
+QPushButton#SidebarButton {
+    background: transparent;
+    color: #dce6ef;
+    text-align: left;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+
+QPushButton#SidebarButton:hover {
+    background: #294154;
+    border: 1px solid #355168;
 }
 
 QPushButton#PrimaryButton {
-    background: #2c6e63;
-    color: white;
-    border: 1px solid #24584f;
+    background: #1f5fa8;
+    color: #ffffff;
+    border: 1px solid #174a84;
 }
 
 QPushButton#PrimaryButton:hover {
-    background: #275f56;
+    background: #1a538f;
 }
 
 QPushButton#DangerButton {
-    background: #fbebe8;
-    color: #8a3128;
-    border: 1px solid #e5b6af;
+    background: #fff1f0;
+    color: #a53d34;
+    border: 1px solid #efcbc7;
 }
 
 QPushButton#GhostButton {
     background: transparent;
-    border: 1px solid #d9cfbe;
 }
 
 QLineEdit, QComboBox, QTextEdit, QPlainTextEdit, QTableView, QScrollArea {
-    background: #fffdfa;
-    border: 1px solid #ddd4c6;
-    border-radius: 12px;
-    color: #24323b;
+    background: #ffffff;
+    color: #22303d;
+    border: 1px solid #d3dde6;
+    border-radius: 10px;
 }
 
 QLineEdit, QComboBox {
-    min-height: 18px;
     padding: 10px 12px;
 }
 
@@ -124,36 +149,39 @@ QTextEdit, QPlainTextEdit {
 }
 
 QLineEdit:focus, QComboBox:focus, QTextEdit:focus, QTableView:focus {
-    border: 1px solid #2c6e63;
+    border: 1px solid #1f5fa8;
 }
 
 QTableView {
-    gridline-color: #efe7da;
-    selection-background-color: #e8f0eb;
-    selection-color: #1f2933;
-    alternate-background-color: #fbf8f1;
+    gridline-color: #e8edf3;
+    alternate-background-color: #f8fafc;
+    selection-background-color: #d9e8f7;
+    selection-color: #203245;
+    padding: 4px;
 }
 
 QHeaderView::section {
-    background: #f5efe4;
-    color: #5c4a3e;
-    padding: 10px 8px;
+    background: #f2f6fa;
+    color: #556474;
+    padding: 12px 10px;
     border: none;
-    border-bottom: 1px solid #e5ddcf;
+    border-bottom: 1px solid #dfe6ed;
+    font-size: 11px;
     font-weight: 700;
+    text-transform: uppercase;
 }
 
 QScrollBar:vertical, QScrollBar:horizontal {
     background: transparent;
     border: none;
-    margin: 2px;
+    margin: 3px;
 }
 
 QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
-    background: #d8cbb7;
+    background: #c6d2de;
     border-radius: 6px;
-    min-height: 28px;
-    min-width: 28px;
+    min-height: 24px;
+    min-width: 24px;
 }
 
 QScrollBar::add-line, QScrollBar::sub-line {
@@ -162,21 +190,21 @@ QScrollBar::add-line, QScrollBar::sub-line {
 }
 
 QStatusBar {
-    background: #efe8db;
-    color: #5b483c;
+    background: #dfe7ee;
+    color: #445463;
 }
 """
 
 
 def apply_app_theme(app: QApplication) -> None:
     palette = QPalette()
-    palette.setColor(QPalette.Window, QColor("#f4f1ea"))
-    palette.setColor(QPalette.Base, QColor("#fffdfa"))
-    palette.setColor(QPalette.AlternateBase, QColor("#fbf8f1"))
-    palette.setColor(QPalette.Text, QColor("#24323b"))
-    palette.setColor(QPalette.Button, QColor("#f8f2e7"))
-    palette.setColor(QPalette.ButtonText, QColor("#433229"))
-    palette.setColor(QPalette.Highlight, QColor("#2c6e63"))
+    palette.setColor(QPalette.Window, QColor("#eef2f6"))
+    palette.setColor(QPalette.Base, QColor("#ffffff"))
+    palette.setColor(QPalette.AlternateBase, QColor("#f8fafc"))
+    palette.setColor(QPalette.Text, QColor("#22303d"))
+    palette.setColor(QPalette.Button, QColor("#f5f8fb"))
+    palette.setColor(QPalette.ButtonText, QColor("#243240"))
+    palette.setColor(QPalette.Highlight, QColor("#1f5fa8"))
     palette.setColor(QPalette.HighlightedText, QColor("#ffffff"))
     app.setPalette(palette)
     app.setStyleSheet(APP_STYLESHEET)
